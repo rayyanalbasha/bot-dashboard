@@ -32,7 +32,6 @@ def save_config(config):
 
 @app.get("/")
 async def home(request: Request):
-    # Pass an empty config dictionary so index.html doesn't throw UndefinedError
     return templates.TemplateResponse("index.html", {"request": request, "user": None, "guilds": [], "config": {}})
 
 @app.get("/login")

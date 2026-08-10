@@ -8,64 +8,150 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: #0c0f1d; color: #f3f4f6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .panel { width: 100%; max-width: 700px; background: #161b2e; padding: 40px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
+        .panel { width: 100%; max-width: 750px; background: #161b2e; padding: 40px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
         h1 { font-size: 22px; color: #fff; font-weight: 700; }
         .server-id { color: #9ca3af; font-size: 13px; background: #1f2937; padding: 6px 12px; border-radius: 8px; }
         
-        .settings-group { margin-bottom: 20px; background: #1f2937; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 14px; font-weight: 600; color: #e5e7eb; }
-        select { background: #111526; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; transition: border-color 0.2s; }
-        select:focus { border-color: #5865F2; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
+        .tab-btn { background: #1f2937; color: #9ca3af; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #5865F2; color: white; box-shadow: 0 4px 12px rgba(88,101,242,0.3); }
         
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .settings-group { margin-bottom: 16px; background: #1f2937; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 14px; font-weight: 600; color: #e5e7eb; }
+        select, input[type="text"] { background: #111526; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; transition: border-color 0.2s; width: 220px; }
+        select:focus, input[type="text"]:focus { border-color: #5865F2; }
+
         .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; }
         .btn-save { background: linear-gradient(135deg, #5865F2, #4752C4); color: white; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(88,101,242,0.3); }
         .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88,101,242,0.4); }
         .back-btn { color: #9ca3af; text-decoration: none; font-weight: 500; font-size: 14px; transition: color 0.2s; }
         .back-btn:hover { color: #fff; }
     </style>
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
 </head>
 <body>
     <div class="panel">
         <div class="header">
-            <h1>Server Punishment Settings</h1>
+            <h1>Server Management Panel</h1>
             <span class="server-id">ID: {{ guild_id }}</span>
         </div>
 
         <form action="/dashboard/{{ guild_id }}/update" method="POST">
-            <div class="settings-group">
-                <label>Bot Add Punishment</label>
-                <select name="bot_add">
-                    <option value="ban" {% if config.get("bot_add") == "ban" %}selected{% endif %}>Ban</option>
-                    <option value="kick" {% if config.get("bot_add") == "kick" %}selected{% endif %}>Kick</option>
-                    <option value="disabled" {% if config.get("bot_add") == "disabled" %}selected{% endif %}>Disabled</option>
-                </select>
+            <div class="tabs">
+                <button type="button" class="tab-btn active" onclick="switchTab('punishments')">Punishments</button>
+                <button type="button" class="tab-btn" onclick="switchTab('moderation')">Moderation</button>
             </div>
 
-            <div class="settings-group">
-                <label>Member Ban Punishment</label>
-                <select name="member_ban">
-                    <option value="ban" {% if config.get("member_ban") == "ban" %}selected{% endif %}>Ban</option>
-                    <option value="kick" {% if config.get("member_ban") == "kick" %}selected{% endif %}>Kick</option>
-                    <option value="disabled" {% if config.get("member_ban") == "disabled" %}selected{% endif %}>Disabled</option>
-                </select>
+            <!-- Punishments Tab -->
+            <div id="punishments" class="tab-content active">
+                <div class="settings-group">
+                    <label>Adding Bot Punishment</label>
+                    <select name="bot_add">
+                        <option value="ban" {% if config.get("bot_add") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("bot_add") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("bot_add") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Kicking Members Punishment</label>
+                    <select name="member_kick">
+                        <option value="ban" {% if config.get("member_kick") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("member_kick") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("member_kick") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Banning Members Punishment</label>
+                    <select name="member_ban">
+                        <option value="ban" {% if config.get("member_ban") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("member_ban") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("member_ban") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Editing Server Name/Description</label>
+                    <select name="server_change">
+                        <option value="ban" {% if config.get("server_change") == "ban" %}selected{% endif %}>Ban & Revert</option>
+                        <option value="kick" {% if config.get("server_change") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("server_change") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Rooms / Voices Edit, Add, Delete & Permissions</label>
+                    <select name="channels_edit">
+                        <option value="ban" {% if config.get("channels_edit") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("channels_edit") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("channels_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Emoji Create / Delete</label>
+                    <select name="emojis_edit">
+                        <option value="ban" {% if config.get("emojis_edit") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("emojis_edit") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("emojis_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Roles Create / Delete / Update Permissions</label>
+                    <select name="roles_edit">
+                        <option value="ban" {% if config.get("roles_edit") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("roles_edit") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("roles_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Roles Remove Punishment</label>
+                    <select name="roles_remove">
+                        <option value="ban" {% if config.get("roles_remove") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("roles_remove") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("roles_remove") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="settings-group">
-                <label>Role Change Punishment</label>
-                <select name="role_change">
-                    <option value="ban" {% if config.get("role_change") == "ban" %}selected{% endif %}>Ban</option>
-                    <option value="warn_then_ban" {% if config.get("role_change") == "warn_then_ban" %}selected{% endif %}>Warn then Ban</option>
-                    <option value="disabled" {% if config.get("role_change") == "disabled" %}selected{% endif %}>Disabled</option>
-                </select>
-            </div>
+            <!-- Moderation Tab -->
+            <div id="moderation" class="tab-content">
+                <div class="settings-group">
+                    <label>Welcome Message Setup</label>
+                    <input type="text" name="welcome_msg" value="{{ config.get('welcome_msg', '') }}" placeholder="e.g. Welcome {user} to {server}!">
+                </div>
 
-            <div class="settings-group">
-                <label>Server Change Punishment</label>
-                <select name="server_change">
-                    <option value="ban" {% if config.get("server_change") == "ban" %}selected{% endif %}>Ban & Revert</option>
-                    <option value="disabled" {% if config.get("server_change") == "disabled" %}selected{% endif %}>Disabled</option>
-                </select>
+                <div class="settings-group">
+                    <label>Bye Message Setup</label>
+                    <input type="text" name="bye_msg" value="{{ config.get('bye_msg', '') }}" placeholder="e.g. Goodbye {user}!">
+                </div>
+
+                <div class="settings-group">
+                    <label>Auto-Mod Filter Words (Comma separated)</label>
+                    <input type="text" name="automod_filter" value="{{ config.get('automod_filter', '') }}" placeholder="badword1, badword2">
+                </div>
+
+                <div class="settings-group">
+                    <label>Anti-Spamming Messages</label>
+                    <select name="automod_spam">
+                        <option value="enabled" {% if config.get("automod_spam") == "enabled" %}selected{% endif %}>Enabled</option>
+                        <option value="disabled" {% if config.get("automod_spam") == "disabled" %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
             </div>
 
             <div class="actions">

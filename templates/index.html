@@ -3,164 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Management Panel</title>
+    <title>Discord Bot Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: #0c0f1d; color: #f3f4f6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .panel { width: 100%; max-width: 750px; background: #161b2e; padding: 40px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
-        h1 { font-size: 22px; color: #fff; font-weight: 700; }
-        .server-id { color: #9ca3af; font-size: 13px; background: #1f2937; padding: 6px 12px; border-radius: 8px; }
-        
-        /* Tabs Styling */
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
-        .tab-btn { background: #1f2937; color: #9ca3af; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-        .tab-btn.active { background: #5865F2; color: white; box-shadow: 0 4px 12px rgba(88,101,242,0.3); }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        .settings-group { margin-bottom: 16px; background: #1f2937; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 14px; font-weight: 600; color: #e5e7eb; }
-        select, input[type="text"] { background: #111526; color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; transition: border-color 0.2s; width: 220px; }
-        select:focus, input[type="text"]:focus { border-color: #5865F2; }
-
-        .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; }
-        .btn-save { background: linear-gradient(135deg, #5865F2, #4752C4); color: white; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(88,101,242,0.3); }
-        .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88,101,242,0.4); }
-        .back-btn { color: #9ca3af; text-decoration: none; font-weight: 500; font-size: 14px; transition: color 0.2s; }
-        .back-btn:hover { color: #fff; }
+        body { background-color: #0c0f1d; color: #f3f4f6; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-x: hidden; }
+        .container { width: 100%; max-width: 600px; padding: 40px; background: #161b2e; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
+        p.welcome { color: #9ca3af; font-size: 15px; margin-bottom: 30px; }
+        .btn-login { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #5865F2, #4752C4); color: white; padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(88,101,242,0.3); }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(88,101,242,0.4); }
+        .btn-login svg { width: 22px; height: 22px; fill: white; }
+        .servers-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #e5e7eb; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; }
+        .servers-grid { display: grid; gap: 12px; }
+        .server-card { display: flex; align-items: center; justify-content: space-between; background: #1f2937; padding: 16px 20px; border-radius: 14px; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s ease; }
+        .server-card:hover { background: #374151; border-color: #5865F2; transform: translateY(-2px); }
+        .server-info { display: flex; align-items: center; gap: 14px; }
+        .server-icon { width: 45px; height: 45px; border-radius: 50%; background: #4b5563; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; }
+        .server-name { font-weight: 600; font-size: 16px; }
+        .arrow { color: #9ca3af; font-size: 18px; }
     </style>
-    <script>
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
-    </script>
 </head>
 <body>
-    <div class="panel">
-        <div class="header">
-            <h1>Server Management Panel</h1>
-            <span class="server-id">ID: {{ guild_id }}</span>
-        </div>
-
-        <form action="/dashboard/{{ guild_id }}/update" method="POST">
-            <!-- Tabs Navigation -->
-            <div class="tabs">
-                <button type="button" class="tab-btn active" onclick="switchTab('punishments')">Punishments</button>
-                <button type="button" class="tab-btn" onclick="switchTab('moderation')">Moderation</button>
+    <div class="container">
+        <h1>Discord Dashboard</h1>
+        {% if not user %}
+            <p class="welcome">Manage your bot effortlessly with a modern smooth interface.</p>
+            <a href="/login" class="btn-login">
+                <svg viewBox="0 0 127.14 96.36">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14c2.65-27.28-4.52-51.1-20.45-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5.18-12.72,11.45-12.72S53.9,46,53.88,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5.18-12.72,11.44-12.72S96.16,46,96.13,53,91,65.69,84.69,65.69Z"/>
+                </svg>
+                Login with Discord
+            </a>
+        {% else %}
+            <p class="welcome">Welcome back, <span style="color: #5865F2; font-weight: 600;">{{ user.username }}</span>!</p>
+            <div class="servers-title">Select a Server to Manage:</div>
+            <div class="servers-grid">
+                {% for guild in guilds %}
+                    <a href="/dashboard/{{ guild.id }}" class="server-card">
+                        <div class="server-info">
+                            {% if guild.icon %}
+                                <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" class="server-icon" alt="">
+                            {% else %}
+                                <div class="server-icon">{{ guild.name[0] }}</div>
+                            {% endif %}
+                            <span class="server-name">{{ guild.name }}</span>
+                        </div>
+                        <span class="arrow">&rarr;</span>
+                    </a>
+                {% endfor %}
             </div>
-
-            <!-- Punishments Tab -->
-            <div id="punishments" class="tab-content active">
-                <div class="settings-group">
-                    <label>Adding Bot Punishment</label>
-                    <select name="bot_add">
-                        <option value="ban" {% if config.get("bot_add") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("bot_add") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("bot_add") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Kicking Members Punishment</label>
-                    <select name="member_kick">
-                        <option value="ban" {% if config.get("member_kick") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("member_kick") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("member_kick") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Banning Members Punishment</label>
-                    <select name="member_ban">
-                        <option value="ban" {% if config.get("member_ban") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("member_ban") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("member_ban") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Editing Server Name/Description</label>
-                    <select name="server_change">
-                        <option value="ban" {% if config.get("server_change") == "ban" %}selected{% endif %}>Ban & Revert</option>
-                        <option value="kick" {% if config.get("server_change") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("server_change") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Rooms / Voices Edit, Add, Delete & Permissions</label>
-                    <select name="channels_edit">
-                        <option value="ban" {% if config.get("channels_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("channels_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("channels_edit") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Emoji Create / Delete</label>
-                    <select name="emojis_edit">
-                        <option value="ban" {% if config.get("emojis_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("emojis_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("emojis_edit") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Roles Create / Delete / Update Permissions</label>
-                    <select name="roles_edit">
-                        <option value="ban" {% if config.get("roles_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("roles_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("roles_edit") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label>Roles Remove Punishment</label>
-                    <select name="roles_remove">
-                        <option value="ban" {% if config.get("roles_remove") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("roles_remove") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("roles_remove") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Moderation Tab -->
-            <div id="moderation" class="tab-content">
-                <div class="settings-group">
-                    <label>Welcome Message Setup</label>
-                    <input type="text" name="welcome_msg" value="{{ config.get('welcome_msg', '') }}" placeholder="e.g. Welcome {user} to {server}!">
-                </div>
-
-                <div class="settings-group">
-                    <label>Bye Message Setup</label>
-                    <input type="text" name="bye_msg" value="{{ config.get('bye_msg', '') }}" placeholder="e.g. Goodbye {user}!">
-                </div>
-
-                <div class="settings-group">
-                    <label>Auto-Mod Filter Words (Comma separated)</label>
-                    <input type="text" name="automod_filter" value="{{ config.get('automod_filter', '') }}" placeholder="badword1, badword2">
-                </div>
-
-                <div class="settings-group">
-                    <label>Anti-Spamming Messages</label>
-                    <select name="automod_spam">
-                        <option value="enabled" {% if config.get("automod_spam") == "enabled" %}selected{% endif %}>Enabled</option>
-                        <option value="disabled" {% if config.get("automod_spam") == "disabled" %}selected{% endif %}>Disabled</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="actions">
-                <a href="/" class="back-btn">&larr; Back to Servers</a>
-                <button type="submit" class="btn-save">Save Changes</button>
-            </div>
-        </form>
+        {% endif %}
     </div>
 </body>
 </html>
