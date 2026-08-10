@@ -10,10 +10,10 @@ app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 
-CLIENT_ID = "1534993557067399328"
-CLIENT_SECRET = "QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez"
+CLIENT_ID = "YOUR_CLIENT_ID"
+CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 REDIRECT_URI = "https://bot-dashboard-l46h.onrender.com/auth/callback"
-BOT_TOKEN = os.getenv("BOT_TOKEN") # Or put your token placeholder here if not using Render env vars
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CONFIG_FILE = "config.json"
 
@@ -23,9 +23,17 @@ def load_config():
             return json.load(f)
     return {
         "bot_add": "ban",
+        "member_kick": "kick",
         "member_ban": "ban",
-        "role_change": "ban",
-        "server_change": "ban"
+        "server_change": "ban",
+        "channels_edit": "ban",
+        "emojis_edit": "ban",
+        "roles_edit": "ban",
+        "roles_remove": "ban",
+        "welcome_msg": "",
+        "bye_msg": "",
+        "automod_filter": "",
+        "automod_spam": "disabled"
     }
 
 def save_config(config):
@@ -97,15 +105,31 @@ async def guild_dashboard(request: Request, guild_id: str):
 async def update_guild_dashboard(
     guild_id: str,
     bot_add: str = Form(...),
+    member_kick: str = Form(...),
     member_ban: str = Form(...),
-    role_change: str = Form(...),
-    server_change: str = Form(...)
+    server_change: str = Form(...),
+    channels_edit: str = Form(...),
+    emojis_edit: str = Form(...),
+    roles_edit: str = Form(...),
+    roles_remove: str = Form(...),
+    welcome_msg: str = Form(""),
+    bye_msg: str = Form(""),
+    automod_filter: str = Form(""),
+    automod_spam: str = Form("disabled")
 ):
     config = {
         "bot_add": bot_add,
+        "member_kick": member_kick,
         "member_ban": member_ban,
-        "role_change": role_change,
-        "server_change": server_change
+        "server_change": server_change,
+        "channels_edit": channels_edit,
+        "emojis_edit": emojis_edit,
+        "roles_edit": roles_edit,
+        "roles_remove": roles_remove,
+        "welcome_msg": welcome_msg,
+        "bye_msg": bye_msg,
+        "automod_filter": automod_filter,
+        "automod_spam": automod_spam
     }
     save_config(config)
     return RedirectResponse(url=f"/dashboard/{guild_id}", status_code=303)
