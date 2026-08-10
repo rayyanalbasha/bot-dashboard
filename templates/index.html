@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: #0c0f1d; color: #f3f4f6; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-x: hidden; }
+        .container { width: 100%; max-width: 600px; padding: 40px; background: #161b2e; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
+        p.welcome { color: #9ca3af; font-size: 15px; margin-bottom: 30px; }
+        .btn-login { display: inline-block; background: linear-gradient(135deg, #5865F2, #4752C4); color: white; padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(88,101,242,0.3); }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(88,101,242,0.4); }
+        .servers-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #e5e7eb; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; }
+        .servers-grid { display: grid; gap: 12px; }
+        .server-card { display: flex; align-items: center; justify-content: space-between; background: #1f2937; padding: 16px 20px; border-radius: 14px; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s ease; }
+        .server-card:hover { background: #374151; border-color: #5865F2; transform: translateY(-2px); }
+        .server-info { display: flex; align-items: center; gap: 14px; }
+        .server-icon { width: 45px; height: 45px; border-radius: 50%; background: #4b5563; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; }
+        .server-name { font-weight: 600; font-size: 16px; }
+        .arrow { color: #9ca3af; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Discord Dashboard</h1>
+        {% if not user %}
+            <p class="welcome">Manage your bot effortlessly with a modern smooth interface.</p>
+            <a href="/login" class="btn-login">Login with Discord</a>
+        {% else %}
+            <p class="welcome">Welcome back, <span style="color: #5865F2; font-weight: 600;">{{ user.username }}</span>!</p>
+            <div class="servers-title">Select a Server to Manage:</div>
+            <div class="servers-grid">
+                {% for guild in guilds %}
+                    <a href="/dashboard/{{ guild.id }}" class="server-card">
+                        <div class="server-info">
+                            {% if guild.icon %}
+                                <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" class="server-icon" alt="">
+                            {% else %}
+                                <div class="server-icon">{{ guild.name[0] }}</div>
+                            {% endif %}
+                            <span class="server-name">{{ guild.name }}</span>
+                        </div>
+                        <span class="arrow">&rarr;</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
