@@ -32,7 +32,8 @@ def save_config(config):
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "user": None, "guilds": []})
+    # Pass an empty config dictionary so index.html doesn't throw UndefinedError
+    return templates.TemplateResponse("index.html", {"request": request, "user": None, "guilds": [], "config": {}})
 
 @app.get("/login")
 async def login():
@@ -81,7 +82,7 @@ async def auth_callback(request: Request, code: str):
             bot_guild_ids = {guild["id"] for guild in bot_guilds}
             filtered_guilds = [g for g in user_guilds if g["id"] in bot_guild_ids]
 
-        return templates.TemplateResponse("index.html", {"request": request, "user": user_data, "guilds": filtered_guilds})
+        return templates.TemplateResponse("index.html", {"request": request, "user": user_data, "guilds": filtered_guilds, "config": {}})
     
     except Exception as e:
         return {"error_occurred": str(e), "trace": traceback.format_exc()}
