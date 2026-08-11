@@ -32,7 +32,7 @@ def save_config(config):
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "user": None, "guilds": [], "config": {}})
+    return templates.TemplateResponse(request, "index.html", {"user": None, "guilds": [], "config": {}})
 
 @app.get("/login")
 async def login():
@@ -81,7 +81,7 @@ async def auth_callback(request: Request, code: str):
             bot_guild_ids = {guild["id"] for guild in bot_guilds}
             filtered_guilds = [g for g in user_guilds if g["id"] in bot_guild_ids]
 
-        return templates.TemplateResponse("index.html", {"request": request, "user": user_data, "guilds": filtered_guilds, "config": {}})
+        return templates.TemplateResponse(request, "index.html", {"user": user_data, "guilds": filtered_guilds, "config": {}})
     
     except Exception as e:
         return {"error_occurred": str(e), "trace": traceback.format_exc()}
@@ -89,7 +89,7 @@ async def auth_callback(request: Request, code: str):
 @app.get("/dashboard/{guild_id}")
 async def guild_dashboard(request: Request, guild_id: str):
     config = load_config()
-    return templates.TemplateResponse("guild.html", {"request": request, "guild_id": guild_id, "config": config})
+    return templates.TemplateResponse(request, "guild.html", {"guild_id": guild_id, "config": config})
 
 @app.post("/dashboard/{guild_id}/update")
 async def update_guild_dashboard(
