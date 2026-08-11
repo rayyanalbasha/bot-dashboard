@@ -135,7 +135,7 @@ async def update_guild_dashboard(
         "channel_change": channels_edit,
         "emoji_change": emojis_edit,
         "role_change": roles_edit,
-        "unban": roles_remove,  # NOTE: unverified mapping, confirm this is what you want
+        "unban": roles_remove,
     }
     for action, value in updates.items():
         cfg.set_punishment(guild_id, action, value)

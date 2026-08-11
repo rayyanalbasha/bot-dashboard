@@ -16,6 +16,16 @@ import subprocess
 import sys
 import time
 
+from dotenv import load_dotenv
+
+# Load .env (if present) into THIS process's os.environ before anything
+# else runs. Both sec.py and main.py are spawned below with env=child_env,
+# which is a copy of os.environ taken AFTER this call — so this is what
+# makes BOT_TOKEN (and the Discord OAuth vars) actually visible to both
+# children, even though neither of them calls load_dotenv() itself.
+load_dotenv()
+
+
 def ensure_requirements(script_dir: str):
     """
     Don't rely on Wispbyte's PY_PACKAGES / REQUIREMENTS_FILE startup
