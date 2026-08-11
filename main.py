@@ -14,9 +14,9 @@ load_dotenv()  # reads .env locally; no-op on Render (env vars are injected dire
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-CLIENT_ID = os.getenv("DISCORD_C1534993557067399328LIENT_ID")
-CLIENT_SECRET = os.getenv("QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez")
-REDIRECT_URI = os.getenv("DISCORD_REDIREhttps://bot-dashboard-l46h.onrender.com/auth/callbackCT_URI")
+CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # --- TEMP DEBUG: remove once you've confirmed env vars are loading ---
