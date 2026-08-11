@@ -1,13 +1,11 @@
+import httpx
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-import httpx
-import traceback
 import os
 import json
 
 app = FastAPI()
-
 templates = Jinja2Templates(directory="templates")
 
 CLIENT_ID = "1534993557067399328"
@@ -84,7 +82,7 @@ async def auth_callback(request: Request, code: str):
         return templates.TemplateResponse(request, "index.html", {"user": user_data, "guilds": filtered_guilds, "config": {}})
     
     except Exception as e:
-        return {"error_occurred": str(e), "trace": traceback.format_exc()}
+        return {"error_occurred": str(e)}
 
 @app.get("/dashboard/{guild_id}")
 async def guild_dashboard(request: Request, guild_id: str):
@@ -107,6 +105,7 @@ async def update_guild_dashboard(
     automod_filter: str = Form(""),
     automod_spam: str = Form("disabled")
 ):
+    # 1. Save settings locally to track states
     config = {
         "bot_add": bot_add,
         "member_kick": member_kick,
@@ -122,4 +121,18 @@ async def update_guild_dashboard(
         "automod_spam": automod_spam
     }
     save_config(config)
+
+    # 2. Communicate changes to Discord API via Bot Token if needed
+    # Example: If you want to update guild settings or trigger server-side changes
+    headers = {
+        "Authorization": f"Bot {BOT_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        # Example API endpoint call to modify guild features/settings if required:
+        # url = f"https://discord.com/api/v10/guilds/{guild_id}"
+        # await client.patch(url, headers=headers, json={...})
+        pass
+
     return RedirectResponse(url=f"/dashboard/{guild_id}", status_code=303)
