@@ -17,7 +17,6 @@ intents.moderation = True  # Required for timeout/ban/kick
 class SecurityBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
-        
 
         # NOTE: punishment settings, bad words, log channel, and verification
         # config all now live in config.db (via shared_config.py), keyed by
@@ -1000,6 +999,7 @@ async def punishments_command(interaction: discord.Interaction):
 
 if __name__ == "__main__":
     BOT_TOKEN = os.getenv("BOT_TOKEN")
+    print(f"[sec.py] BOT_TOKEN visible here: {bool(BOT_TOKEN)} (len={len(BOT_TOKEN) if BOT_TOKEN else 0})")
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN environment variable is not set.")
 

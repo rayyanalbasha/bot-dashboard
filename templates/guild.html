@@ -95,36 +95,36 @@
                 <div class="settings-group">
                     <label>Rooms / Voices Edit, Add, Delete & Permissions</label>
                     <select name="channels_edit">
-                        <option value="ban" {% if config.get("channels_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("channels_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("channels_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                        <option value="ban" {% if config.get("channel_change") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("channel_change") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("channel_change") == "disabled" %}selected{% endif %}>Disabled</option>
                     </select>
                 </div>
 
                 <div class="settings-group">
                     <label>Emoji Create / Delete</label>
                     <select name="emojis_edit">
-                        <option value="ban" {% if config.get("emojis_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("emojis_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("emojis_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                        <option value="ban" {% if config.get("emoji_change") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("emoji_change") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("emoji_change") == "disabled" %}selected{% endif %}>Disabled</option>
                     </select>
                 </div>
 
                 <div class="settings-group">
                     <label>Roles Create / Delete / Update Permissions</label>
                     <select name="roles_edit">
-                        <option value="ban" {% if config.get("roles_edit") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("roles_edit") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("roles_edit") == "disabled" %}selected{% endif %}>Disabled</option>
+                        <option value="ban" {% if config.get("role_change") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("role_change") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("role_change") == "disabled" %}selected{% endif %}>Disabled</option>
                     </select>
                 </div>
 
                 <div class="settings-group">
-                    <label>Roles Remove Punishment</label>
+                    <label>Unban Punishment</label>
                     <select name="roles_remove">
-                        <option value="ban" {% if config.get("roles_remove") == "ban" %}selected{% endif %}>Ban</option>
-                        <option value="kick" {% if config.get("roles_remove") == "kick" %}selected{% endif %}>Kick</option>
-                        <option value="disabled" {% if config.get("roles_remove") == "disabled" %}selected{% endif %}>Disabled</option>
+                        <option value="ban" {% if config.get("unban") == "ban" %}selected{% endif %}>Ban</option>
+                        <option value="kick" {% if config.get("unban") == "kick" %}selected{% endif %}>Kick</option>
+                        <option value="disabled" {% if config.get("unban") == "disabled" %}selected{% endif %}>Disabled</option>
                     </select>
                 </div>
             </div>
