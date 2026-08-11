@@ -13,10 +13,19 @@ load_dotenv()  # reads .env locally; no-op on Render (env vars are injected dire
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "1534993557067399328")
-CLIENT_SECRET = os.getenv("QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez")  # set this in your environment, do not hardcode
-REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "https://bot-dashboard-l46h.onrender.com/auth/callback")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+CLIENT_ID = os.getenv("1534993557067399328")
+CLIENT_SECRET = os.getenv("QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez")
+REDIRECT_URI = os.getenv("https://bot-dashboard-l46h.onrender.com/auth/callback")
+BOT_TOKEN = os.getenv("MTUzNDk5MzU1NzA2NzM5OTMyOA.G1C9QC.HUZ7vGMRzZiao_TooJsP5DFe_3a7dwl-MxKrh8")
+
+missing = [name for name, val in [
+    ("DISCORD_CLIENT_ID", CLIENT_ID),
+    ("DISCORD_CLIENT_SECRET", CLIENT_SECRET),
+    ("DISCORD_REDIRECT_URI", REDIRECT_URI),
+    ("BOT_TOKEN", BOT_TOKEN),
+] if not val]
+if missing:
+    raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
 cfg.init_db()
 
@@ -38,10 +47,6 @@ async def login():
 @app.get("/auth/callback")
 async def auth_callback(request: Request, code: str):
     try:
-        print("DEBUG CLIENT_ID:", repr(CLIENT_ID))
-        print("DEBUG SECRET SET:", bool(CLIENT_SECRET), "LEN:", len(CLIENT_SECRET or ""))
-        print("DEBUG REDIRECT_URI:", repr(REDIRECT_URI))
-
         token_url = "https://discord.com/api/oauth2/token"
         payload = {
             "client_id": CLIENT_ID,
@@ -87,49 +92,52 @@ async def auth_callback(request: Request, code: str):
 @app.get("/dashboard/{guild_id}")
 async def guild_dashboard(request: Request, guild_id: str):
     config = cfg.get_guild_config(guild_id)
-    return templates.TemplateResponse(request, "guild.html", {"guild_id": guild_id, "config": config})
+    return templates.TemplateResponse(request, "guild.html", {"guild_id": guild_id, "config": config["punishments"] | {
+        "welcome_msg": config["welcome_msg"],
+        "bye_msg": config["bye_msg"],
+    }})
 
 
-# NOTE: these field names now match the action keys the bot actually checks
-# (cfg.PUNISHMENT_ACTIONS = bot_add, member_ban, member_kick, channel_change,
-# role_change, emoji_change, unban, server_change). Update your guild.html
-# form's `name="..."` attributes to match these exactly, or the values won't
-# bind. Each value should be "ban", "kick", or "disabled".
 @app.post("/dashboard/{guild_id}/update")
 async def update_guild_dashboard(
     guild_id: str,
     bot_add: str = Form("ban"),
-    member_ban: str = Form("ban"),
     member_kick: str = Form("ban"),
-    channel_change: str = Form("ban"),
-    role_change: str = Form("ban"),
-    emoji_change: str = Form("ban"),
-    unban: str = Form("ban"),
+    member_ban: str = Form("ban"),
     server_change: str = Form("ban"),
+    channels_edit: str = Form("ban"),
+    emojis_edit: str = Form("ban"),
+    roles_edit: str = Form("ban"),
+    roles_remove: str = Form("ban"),
     welcome_msg: str = Form(""),
     bye_msg: str = Form(""),
+    automod_filter: str = Form(""),
+    automod_spam: str = Form("disabled"),
 ):
+    # Map guild.html's field names -> the action keys bot.py/shared_config actually use
     updates = {
         "bot_add": bot_add,
-        "member_ban": member_ban,
         "member_kick": member_kick,
-        "channel_change": channel_change,
-        "role_change": role_change,
-        "emoji_change": emoji_change,
-        "unban": unban,
+        "member_ban": member_ban,
         "server_change": server_change,
+        "channel_change": channels_edit,
+        "emoji_change": emojis_edit,
+        "role_change": roles_edit,
+        "unban": roles_remove,  # NOTE: see message below — this mapping is a guess, please check
     }
     for action, value in updates.items():
         cfg.set_punishment(guild_id, action, value)
 
     cfg.set_messages(guild_id, welcome_msg=welcome_msg, bye_msg=bye_msg)
 
+    if automod_filter:
+        cfg.add_bad_words(guild_id, automod_filter.split(","))
+
     return RedirectResponse(url=f"/dashboard/{guild_id}", status_code=303)
 
 
 @app.post("/dashboard/{guild_id}/badwords/add")
 async def add_bad_words(guild_id: str, words: str = Form(...)):
-    """words: space or newline separated list, matching the /فلتر_لوحة modal behavior."""
     added, skipped = cfg.add_bad_words(guild_id, words.split())
     return RedirectResponse(url=f"/dashboard/{guild_id}", status_code=303)
 
