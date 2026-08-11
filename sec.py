@@ -1012,4 +1012,4 @@ async def punishments_command(interaction: discord.Interaction):
 
 
 # Replace with your reset bot token
-bot.run("MTUzNDk5MzU1NzA2NzM5OTMyOA.G1C9QC.HUZ7vGMRzZiao_TooJsP5DFe_3a7dwl-MxKrh8")
+bot.run("MTUzNDk5MzU1NzA2NzM5OTMyOA.GrKcVG.2cQQymIUg8mGi8RAfkw_i8E4J39MOAF82GCPtI")
