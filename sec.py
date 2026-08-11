@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from datetime import timedelta
 import discord
@@ -27,13 +28,13 @@ class SecurityBot(commands.Bot):
         self.bad_words = ["كلمة1", "كلمة2"]
         self.warnings = defaultdict(int)
         self.message_logs = defaultdict(list)
-        
+
         # Security tracking dictionaries
         self.everyone_logs = defaultdict(list)       # Member ID -> list of mention timestamps
         self.everyone_warns = defaultdict(int)      # Member ID -> mention warn count
         self.image_logs = defaultdict(list)          # Member ID -> list of (timestamp, channel_id, img_signature)
         self.manual_warnings = defaultdict(int)      # Member ID -> warn count from /تحذير command
-        
+
         # Store log channel per server (Guild ID -> Channel ID)
         self.log_channels = {}
         # Store verification settings per server (Guild ID -> {"role_id": int, "channel_id": int})
@@ -60,14 +61,14 @@ def is_immune(member: discord.Member) -> bool:
 def can_manage_panel(member: discord.Member, guild: discord.Guild) -> tuple[bool, str]:
     if member.id == guild.owner_id:
         return True, ""
-    
+
     if not member.guild_permissions.administrator:
         return False, "❌ ليس لديك صلاحية Administrator لاستخدام هذا الأمر."
-    
+
     bot_member = guild.me
     if member.top_role.position <= bot_member.top_role.position:
         return False, "❌ لا يمكنك استخدام هذه اللوحة لأن رتبتك الإدارية أقل من أو مساوية لرتبة البوت."
-        
+
     return True, ""
 
 # Helper function to send log messages
@@ -75,10 +76,10 @@ async def send_log_channel(guild: discord.Guild, text: str):
     try:
         channel_id = bot.log_channels.get(guild.id)
         log_channel = guild.get_channel(channel_id) if channel_id else None
-        
+
         if not log_channel:
             return
-        
+
         if log_channel and log_channel.permissions_for(guild.me).send_messages:
             await log_channel.send(text)
     except Exception as e:
@@ -129,9 +130,9 @@ async def on_guild_update(before: discord.Guild, after: discord.Guild):
                     user_member = after.get_member(entry.user.id)
                     if user_member and not is_immune(user_member):
                         await execute_punishment(user_member, "server_change", "Attempted to modify server details/name")
-                    
+
                     await send_log_channel(
-                        after, 
+                        after,
                         f"🛡️ **[SERVER EDIT REVERTED]** قام الإداري {entry.user.mention} بتعديل معلومات/اسم السيرفر وتم إرجاعها تلقائياً (المالك فقط هو المسموح له)."
                     )
                 except Exception as e:
@@ -142,7 +143,7 @@ async def on_guild_update(before: discord.Guild, after: discord.Guild):
 async def on_member_join(member: discord.Member):
     guild = member.guild
     verif_data = bot.verification_config.get(guild.id)
-    
+
     if verif_data:
         verif_role_id = verif_data.get("role_id")
         verif_role = guild.get_role(verif_role_id)
@@ -326,7 +327,7 @@ async def on_message(message: discord.Message):
                     await send_log_channel(message.guild, f"🚨 **[EVERYONE BAN]** تم حظر العضو {member.mention} لتكرار سبام منشن @everyone.")
                 except Exception as e:
                     print(f"Error banning @everyone spammer: {e}")
-            
+
             bot.everyone_logs[member.id] = []
             return
 
@@ -345,7 +346,7 @@ async def on_message(message: discord.Message):
                 bot.image_logs[member.id] = img_stamps
 
                 unique_channels = set(ch_id for _, ch_id, sig in img_stamps if sig == img_sig)
-                
+
                 if len(unique_channels) >= 4:
                     try:
                         await member.ban(reason="Cross-channel image spam (same image sent in 4 channels in 1 min)")
@@ -370,7 +371,7 @@ async def on_message(message: discord.Message):
                 await send_log_channel(message.guild, f"⏳ **[SPAM]** تم إعطاء تايم أوت 5 دقائق للعضو {member.mention} بسبب سبام الرسائل في روم {message.channel.mention}.")
             except Exception as e:
                 print(f"CRITICAL TIMEOUT ERROR for {member.name}: {e}")
-            
+
             bot.message_logs[message.author.id] = []
             return
 
@@ -378,7 +379,7 @@ async def on_message(message: discord.Message):
     if not is_immune(member):
         content_lower = message.content.lower()
         contains_bad_word = any(bad_word.strip().lower() in content_lower for bad_word in bot.bad_words if bad_word.strip())
-        
+
         if contains_bad_word:
             try:
                 await message.delete()
@@ -623,7 +624,7 @@ class VerifyButtonView(discord.ui.View):
     async def verify_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
-        
+
         role = guild.get_role(self.unverified_role_id)
         if role:
             try:
@@ -648,7 +649,7 @@ async def setup_verification(interaction: discord.Interaction, channel_name: str
 
     try:
         unverified_role = await guild.create_role(name="Unverified", reason="Verification System Role")
-        
+
         for channel in guild.channels:
             try:
                 await channel.set_permissions(unverified_role, view_channel=False)
@@ -693,7 +694,7 @@ async def disable_verification(interaction: discord.Interaction):
 
     guild = interaction.guild
     verif_data = bot.verification_config.get(guild.id)
-    
+
     if not verif_data:
         await interaction.response.send_message("❌ لا يوجد نظام تحقق مفعل حالياً في هذا السيرفر.", ephemeral=True)
         return
@@ -704,13 +705,13 @@ async def disable_verification(interaction: discord.Interaction):
         channel = guild.get_channel(verif_data["channel_id"])
         if channel:
             await channel.delete(reason="Verification system removed")
-        
+
         role = guild.get_role(verif_data["role_id"])
         if role:
             await role.delete(reason="Verification system removed")
-            
+
         del bot.verification_config[guild.id]
-        
+
         await interaction.followup.send("✅ تم تعطيل نظام التحقق بنجاح وإعادة الصلاحيات للوضع الطبيعي.")
         await send_log_channel(guild, f"🛡️ **[VERIFICATION REMOVED]** قام الإداري {interaction.user.mention} بحذف نظام التحقق بالكامل.")
 
@@ -745,7 +746,7 @@ async def log_channel_command(interaction: discord.Interaction, room: discord.Te
 class MultiWordAddModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="إضافة كلمات جديدة للفلتر")
-        
+
         self.words_input = discord.ui.TextInput(
             label="اكتب الكلمات (افصل بينها بمسافة أو سطر جديد)",
             style=discord.TextStyle.paragraph,
@@ -1011,5 +1012,11 @@ async def punishments_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-# Replace with your reset bot token
-bot.run("MTUzNDk5MzU1NzA2NzM5OTMyOA.GrKcVG.2cQQymIUg8mGi8RAfkw_i8E4J39MOAF82GCPtI")
+# ==================== Entry Point ====================
+
+if __name__ == "__main__":
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN environment variable is not set.")
+
+    bot.run(BOT_TOKEN)
