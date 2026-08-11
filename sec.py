@@ -1,15 +1,8 @@
-import os
 from collections import defaultdict
 from datetime import timedelta
-
-from dotenv import load_dotenv
 import discord
 from discord import app_commands
 from discord.ext import commands
-
-import shared_config as cfg
-
-load_dotenv()  # reads .env locally; no-op on Render (env vars are injected directly)
 
 # Initialize intents
 intents = discord.Intents.default()
@@ -18,33 +11,43 @@ intents.message_content = True
 intents.guilds = True
 intents.moderation = True  # Required for timeout/ban/kick
 
-
 class SecurityBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
-
-        # Runtime-only trackers (NOT configuration — these reset if the bot
-        # restarts, and they don't need to be shared with the dashboard).
+        self.punishment_config = {
+            "bot_add": "ban",
+            "member_ban": "ban",
+            "member_kick": "kick",
+            "channel_change": "ban",
+            "role_change": "warn_then_ban",
+            "emoji_change": "ban",
+            "unban": "ban",
+            "server_change": "ban",
+        }
+        self.bad_words = ["كلمة1", "كلمة2"]
         self.warnings = defaultdict(int)
         self.message_logs = defaultdict(list)
-        self.everyone_logs = defaultdict(list)
-        self.everyone_warns = defaultdict(int)
-        self.image_logs = defaultdict(list)
-        self.manual_warnings = defaultdict(int)
+        
+        # Security tracking dictionaries
+        self.everyone_logs = defaultdict(list)       # Member ID -> list of mention timestamps
+        self.everyone_warns = defaultdict(int)      # Member ID -> mention warn count
+        self.image_logs = defaultdict(list)          # Member ID -> list of (timestamp, channel_id, img_signature)
+        self.manual_warnings = defaultdict(int)      # Member ID -> warn count from /تحذير command
+        
+        # Store log channel per server (Guild ID -> Channel ID)
+        self.log_channels = {}
+        # Store verification settings per server (Guild ID -> {"role_id": int, "channel_id": int})
+        self.verification_config = {}
 
     async def setup_hook(self):
-        cfg.init_db()
         await self.tree.sync()
         print(f"Synced slash commands for {self.user}")
 
-
 bot = SecurityBot()
-
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
-
 
 def is_immune(member: discord.Member) -> bool:
     if member.id == member.guild.owner_id:
@@ -53,40 +56,39 @@ def is_immune(member: discord.Member) -> bool:
         return True
     return False
 
-
+# Permission check: User must be Admin and higher in the role hierarchy than the bot
 def can_manage_panel(member: discord.Member, guild: discord.Guild) -> tuple[bool, str]:
     if member.id == guild.owner_id:
         return True, ""
-
+    
     if not member.guild_permissions.administrator:
         return False, "❌ ليس لديك صلاحية Administrator لاستخدام هذا الأمر."
-
+    
     bot_member = guild.me
     if member.top_role.position <= bot_member.top_role.position:
         return False, "❌ لا يمكنك استخدام هذه اللوحة لأن رتبتك الإدارية أقل من أو مساوية لرتبة البوت."
-
+        
     return True, ""
 
-
+# Helper function to send log messages
 async def send_log_channel(guild: discord.Guild, text: str):
     try:
-        channel_id = cfg.get_log_channel(guild.id)
-        log_channel = guild.get_channel(int(channel_id)) if channel_id else None
-
+        channel_id = bot.log_channels.get(guild.id)
+        log_channel = guild.get_channel(channel_id) if channel_id else None
+        
         if not log_channel:
             return
-
-        if log_channel.permissions_for(guild.me).send_messages:
+        
+        if log_channel and log_channel.permissions_for(guild.me).send_messages:
             await log_channel.send(text)
     except Exception as e:
         print(f"Failed to send log: {e}")
-
 
 async def execute_punishment(member: discord.Member, action_type: str, reason: str):
     if is_immune(member):
         return
 
-    setting = cfg.get_punishment(member.guild.id, action_type)
+    setting = bot.punishment_config.get(action_type, "ban")
     if setting == "disabled" or not member.guild.me.guild_permissions.administrator:
         return
 
@@ -99,7 +101,6 @@ async def execute_punishment(member: discord.Member, action_type: str, reason: s
             await send_log_channel(member.guild, f"🚨 **[KICK]** تم طرد العضو {member.mention} (`{member.id}`). السبب: `{reason}` (نوع الحدث: `{action_type}`)")
     except Exception as e:
         print(f"Failed to punish {member}: {e}")
-
 
 # ==================== Event Listeners ====================
 
@@ -128,23 +129,23 @@ async def on_guild_update(before: discord.Guild, after: discord.Guild):
                     user_member = after.get_member(entry.user.id)
                     if user_member and not is_immune(user_member):
                         await execute_punishment(user_member, "server_change", "Attempted to modify server details/name")
-
+                    
                     await send_log_channel(
-                        after,
+                        after, 
                         f"🛡️ **[SERVER EDIT REVERTED]** قام الإداري {entry.user.mention} بتعديل معلومات/اسم السيرفر وتم إرجاعها تلقائياً (المالك فقط هو المسموح له)."
                     )
                 except Exception as e:
                     print(f"Failed to revert server update: {e}")
             break
 
-
 @bot.event
 async def on_member_join(member: discord.Member):
     guild = member.guild
-    verif_data = cfg.get_verification(guild.id)
-
+    verif_data = bot.verification_config.get(guild.id)
+    
     if verif_data:
-        verif_role = guild.get_role(verif_data["role_id"])
+        verif_role_id = verif_data.get("role_id")
+        verif_role = guild.get_role(verif_role_id)
         if verif_role:
             try:
                 await member.add_roles(verif_role, reason="New member verification pending")
@@ -161,7 +162,6 @@ async def on_member_join(member: discord.Member):
                     await execute_punishment(member, "bot_add", "Unauthorized bot join")
                     await send_log_channel(member.guild, f"⚠️ **[BOT ADD]** قام العضو {adder_member.mention} بإضافة بوت غير مسموح به: {member.mention}")
                 break
-
 
 @bot.event
 async def on_member_remove(member: discord.Member):
@@ -185,24 +185,20 @@ async def on_member_remove(member: discord.Member):
                         await send_log_channel(guild, f"🛡️ **[MEMBER KICK]** قام العضو {user_member.mention} بطرد عضو آخر ({member.name}).")
             break
 
-
 @bot.event
 async def on_guild_channel_create(channel):
     await handle_channel_audit(channel.guild, "إنشاء روم")
-
 
 @bot.event
 async def on_guild_channel_delete(channel):
     await handle_channel_audit(channel.guild, "حذف روم")
 
-
 @bot.event
 async def on_guild_channel_update(before, after):
     await handle_channel_audit(after.guild, "تعديل روم")
 
-
 async def handle_channel_audit(guild, action_name):
-    if cfg.get_punishment(guild.id, "channel_change") == "disabled":
+    if bot.punishment_config.get("channel_change") == "disabled":
         return
     async for entry in guild.audit_logs(limit=1):
         if entry.action in [
@@ -217,25 +213,21 @@ async def handle_channel_audit(guild, action_name):
                     await send_log_channel(guild, f"📁 **[CHANNEL AUDIT]** قام العضو {user_member.mention} بـ ({action_name}).")
             break
 
-
 @bot.event
 async def on_guild_role_create(role):
     await handle_role_audit(role.guild, role)
 
-
 @bot.event
 async def on_guild_role_delete(role):
     await handle_role_audit(role.guild, role)
-
 
 @bot.event
 async def on_guild_role_update(before, after):
     if before.name != after.name:
         await handle_role_audit(after.guild, after)
 
-
 async def handle_role_audit(guild, role):
-    if cfg.get_punishment(guild.id, "role_change") == "disabled":
+    if bot.punishment_config.get("role_change") == "disabled":
         return
     async for entry in guild.audit_logs(limit=1):
         if entry.action in [
@@ -250,7 +242,7 @@ async def handle_role_audit(guild, role):
                     try:
                         if role in member.roles:
                             await member.remove_roles(role)
-                    except Exception:
+                    except:
                         pass
                     bot.warnings[member.id] += 1
                     if bot.warnings[member.id] == 1:
@@ -261,7 +253,7 @@ async def handle_role_audit(guild, role):
                                         f"التحذير الاول والاخير ل {member.mention} , السبب:\nاعطاء /حذف/ تعديل رول"
                                     )
                                     break
-                        except Exception:
+                        except:
                             pass
                         await send_log_channel(guild, f"⚠️ **[ROLE WARNING]** تحذير أول للعضو {member.mention} بسبب العبث بالرولات.")
                     else:
@@ -270,10 +262,9 @@ async def handle_role_audit(guild, role):
                         await send_log_channel(guild, f"🚨 **[ROLE BAN]** تم حظر العضو {member.mention} لتكرار العبث بالرولات.")
             break
 
-
 @bot.event
 async def on_guild_emojis_update(guild, before, after):
-    if cfg.get_punishment(guild.id, "emoji_change") == "disabled":
+    if bot.punishment_config.get("emoji_change") == "disabled":
         return
     async for entry in guild.audit_logs(limit=1):
         if entry.action in [
@@ -287,10 +278,9 @@ async def on_guild_emojis_update(guild, before, after):
                     await send_log_channel(guild, f"😀 **[EMOJI AUDIT]** قام العضو {user_member.mention} بتعديل الإيموجيات وتمت معاقبته.")
             break
 
-
 @bot.event
 async def on_member_unban(guild, user):
-    if cfg.get_punishment(guild.id, "unban") == "disabled":
+    if bot.punishment_config.get("unban") == "disabled":
         return
     async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.unban):
         if entry.target.id == user.id:
@@ -300,7 +290,6 @@ async def on_member_unban(guild, user):
                     await execute_punishment(member, "unban", "Unbanned a user")
                     await send_log_channel(guild, f"🔓 **[UNBAN AUDIT]** قام العضو {member.mention} بفك الحظر عن عضو آخر ({user.name}).")
             break
-
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -337,7 +326,7 @@ async def on_message(message: discord.Message):
                     await send_log_channel(message.guild, f"🚨 **[EVERYONE BAN]** تم حظر العضو {member.mention} لتكرار سبام منشن @everyone.")
                 except Exception as e:
                     print(f"Error banning @everyone spammer: {e}")
-
+            
             bot.everyone_logs[member.id] = []
             return
 
@@ -356,7 +345,7 @@ async def on_message(message: discord.Message):
                 bot.image_logs[member.id] = img_stamps
 
                 unique_channels = set(ch_id for _, ch_id, sig in img_stamps if sig == img_sig)
-
+                
                 if len(unique_channels) >= 4:
                     try:
                         await member.ban(reason="Cross-channel image spam (same image sent in 4 channels in 1 min)")
@@ -381,16 +370,15 @@ async def on_message(message: discord.Message):
                 await send_log_channel(message.guild, f"⏳ **[SPAM]** تم إعطاء تايم أوت 5 دقائق للعضو {member.mention} بسبب سبام الرسائل في روم {message.channel.mention}.")
             except Exception as e:
                 print(f"CRITICAL TIMEOUT ERROR for {member.name}: {e}")
-
+            
             bot.message_logs[message.author.id] = []
             return
 
-    # Bad Words Substring Filter (loaded live from DB, editable via dashboard/slash panel)
+    # Bad Words Substring Filter
     if not is_immune(member):
         content_lower = message.content.lower()
-        bad_words = cfg.get_bad_words(message.guild.id)
-        contains_bad_word = any(bw.strip().lower() in content_lower for bw in bad_words if bw.strip())
-
+        contains_bad_word = any(bad_word.strip().lower() in content_lower for bad_word in bot.bad_words if bad_word.strip())
+        
         if contains_bad_word:
             try:
                 await message.delete()
@@ -635,7 +623,7 @@ class VerifyButtonView(discord.ui.View):
     async def verify_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
-
+        
         role = guild.get_role(self.unverified_role_id)
         if role:
             try:
@@ -660,11 +648,11 @@ async def setup_verification(interaction: discord.Interaction, channel_name: str
 
     try:
         unverified_role = await guild.create_role(name="Unverified", reason="Verification System Role")
-
+        
         for channel in guild.channels:
             try:
                 await channel.set_permissions(unverified_role, view_channel=False)
-            except Exception:
+            except:
                 pass
 
         verif_channel_overwrites = {
@@ -675,7 +663,10 @@ async def setup_verification(interaction: discord.Interaction, channel_name: str
 
         verif_channel = await guild.create_text_channel(name=channel_name, overwrites=verif_channel_overwrites)
 
-        cfg.set_verification(guild.id, unverified_role.id, verif_channel.id)
+        bot.verification_config[guild.id] = {
+            "role_id": unverified_role.id,
+            "channel_id": verif_channel.id
+        }
 
         embed = discord.Embed(
             title="🔒 Verification / نظام التحقق",
@@ -701,8 +692,8 @@ async def disable_verification(interaction: discord.Interaction):
         return
 
     guild = interaction.guild
-    verif_data = cfg.get_verification(guild.id)
-
+    verif_data = bot.verification_config.get(guild.id)
+    
     if not verif_data:
         await interaction.response.send_message("❌ لا يوجد نظام تحقق مفعل حالياً في هذا السيرفر.", ephemeral=True)
         return
@@ -713,13 +704,13 @@ async def disable_verification(interaction: discord.Interaction):
         channel = guild.get_channel(verif_data["channel_id"])
         if channel:
             await channel.delete(reason="Verification system removed")
-
+        
         role = guild.get_role(verif_data["role_id"])
         if role:
             await role.delete(reason="Verification system removed")
-
-        cfg.clear_verification(guild.id)
-
+            
+        del bot.verification_config[guild.id]
+        
         await interaction.followup.send("✅ تم تعطيل نظام التحقق بنجاح وإعادة الصلاحيات للوضع الطبيعي.")
         await send_log_channel(guild, f"🛡️ **[VERIFICATION REMOVED]** قام الإداري {interaction.user.mention} بحذف نظام التحقق بالكامل.")
 
@@ -737,7 +728,7 @@ async def log_channel_command(interaction: discord.Interaction, room: discord.Te
         await interaction.response.send_message(error_msg, ephemeral=True)
         return
 
-    cfg.set_log_channel(interaction.guild.id, room.id)
+    bot.log_channels[interaction.guild.id] = room.id
 
     await interaction.response.send_message(
         f"✅ تم تحديد روم اللوجات بنجاح إلى: {room.mention}",
@@ -754,7 +745,7 @@ async def log_channel_command(interaction: discord.Interaction, room: discord.Te
 class MultiWordAddModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="إضافة كلمات جديدة للفلتر")
-
+        
         self.words_input = discord.ui.TextInput(
             label="اكتب الكلمات (افصل بينها بمسافة أو سطر جديد)",
             style=discord.TextStyle.paragraph,
@@ -771,7 +762,17 @@ class MultiWordAddModal(discord.ui.Modal):
             return
 
         words_to_add = self.words_input.value.split()
-        added_count, already_exists = cfg.add_bad_words(interaction.guild.id, words_to_add)
+        added_count = 0
+        already_exists = 0
+
+        for w in words_to_add:
+            val = w.strip().lower()
+            if val:
+                if val in bot.bad_words:
+                    already_exists += 1
+                else:
+                    bot.bad_words.append(val)
+                    added_count += 1
 
         msg = f"✅ تمت إضافة **{added_count}** كلمة بنجاح للفلتر!"
         if already_exists > 0:
@@ -782,12 +783,11 @@ class MultiWordAddModal(discord.ui.Modal):
 
 
 class RemoveWordSelect(discord.ui.Select):
-    def __init__(self, guild_id: int):
-        bad_words = cfg.get_bad_words(guild_id)
-        if not bad_words:
+    def __init__(self):
+        if not bot.bad_words:
             options = [discord.SelectOption(label="الفارغ حالياً", value="empty")]
         else:
-            options = [discord.SelectOption(label=w, value=w) for w in bad_words[:25]]
+            options = [discord.SelectOption(label=w, value=w) for w in bot.bad_words[:25]]
 
         super().__init__(
             placeholder="اختر كلمة لحذفها من الفلتر...",
@@ -807,7 +807,8 @@ class RemoveWordSelect(discord.ui.Select):
             return
 
         word_to_remove = self.values[0]
-        if cfg.remove_bad_word(interaction.guild.id, word_to_remove):
+        if word_to_remove in bot.bad_words:
+            bot.bad_words.remove(word_to_remove)
             await interaction.response.send_message(
                 f"🗑️ تمت إزالة الكلمة `{word_to_remove}` من الفلتر بنجاح!",
                 ephemeral=True,
@@ -818,10 +819,9 @@ class RemoveWordSelect(discord.ui.Select):
 
 
 class FilterManagementView(discord.ui.View):
-    def __init__(self, guild_id: int):
+    def __init__(self):
         super().__init__(timeout=None)
-        self.guild_id = guild_id
-        self.add_item(RemoveWordSelect(guild_id))
+        self.add_item(RemoveWordSelect())
 
     @discord.ui.button(
         label="➕ إضافة كلمات جديدة",
@@ -848,8 +848,10 @@ class FilterManagementView(discord.ui.View):
             await interaction.response.send_message(error_msg, ephemeral=True)
             return
 
-        bad_words = cfg.get_bad_words(interaction.guild.id)
-        words_str = "فارغ حالياً" if not bad_words else ", ".join(f"`{w}`" for w in bad_words)
+        if not bot.bad_words:
+            words_str = "فارغ حالياً"
+        else:
+            words_str = ", ".join([f"`{w}`" for w in bot.bad_words])
 
         embed = discord.Embed(
             title="⚙️ لوحة إدارة فلتر المسبات المتقدمة",
@@ -860,7 +862,7 @@ class FilterManagementView(discord.ui.View):
             ),
             color=discord.Color.blue(),
         )
-        await interaction.response.edit_message(embed=embed, view=FilterManagementView(interaction.guild.id))
+        await interaction.response.edit_message(embed=embed, view=FilterManagementView())
 
 
 @bot.tree.command(name="فلتر_لوحة", description="فتح لوحة التحكم الكاملة لإضافة وحذف الكلمات")
@@ -870,8 +872,10 @@ async def filter_dashboard(interaction: discord.Interaction):
         await interaction.response.send_message(error_msg, ephemeral=True)
         return
 
-    bad_words = cfg.get_bad_words(interaction.guild.id)
-    words_str = "فارغ حالياً" if not bad_words else ", ".join(f"`{w}`" for w in bad_words)
+    if not bot.bad_words:
+        words_str = "فارغ حالياً"
+    else:
+        words_str = ", ".join([f"`{w}`" for w in bot.bad_words])
 
     embed = discord.Embed(
         title="⚙️ لوحة إدارة فلتر المسبات المتقدمة",
@@ -883,21 +887,20 @@ async def filter_dashboard(interaction: discord.Interaction):
         color=discord.Color.blue(),
     )
 
-    view = FilterManagementView(interaction.guild.id)
+    view = FilterManagementView()
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 # ==================== Punishments Dashboard ====================
 
 class PunishmentControlView(discord.ui.View):
-    def __init__(self, guild_id: int, action_key: str):
+    def __init__(self, action_key: str):
         super().__init__(timeout=180)
-        self.guild_id = guild_id
         self.action_key = action_key
         self.update_buttons()
 
     def update_buttons(self):
-        current_status = cfg.get_punishment(self.guild_id, self.action_key)
+        current_status = bot.punishment_config.get(self.action_key)
         for child in self.children:
             if isinstance(child, discord.ui.Button) and child.custom_id == "toggle_disable_btn":
                 if current_status == "disabled":
@@ -909,7 +912,7 @@ class PunishmentControlView(discord.ui.View):
 
     @discord.ui.button(label="Ban", style=discord.ButtonStyle.danger)
     async def set_ban(self, interaction: discord.Interaction, button: discord.ui.Button):
-        cfg.set_punishment(self.guild_id, self.action_key, "ban")
+        bot.punishment_config[self.action_key] = "ban"
         self.update_buttons()
         await interaction.response.edit_message(
             content=f"تم تغيير عقوبة `{self.action_key}` إلى **Ban**.", view=self
@@ -918,7 +921,7 @@ class PunishmentControlView(discord.ui.View):
 
     @discord.ui.button(label="Kick", style=discord.ButtonStyle.primary)
     async def set_kick(self, interaction: discord.Interaction, button: discord.ui.Button):
-        cfg.set_punishment(self.guild_id, self.action_key, "kick")
+        bot.punishment_config[self.action_key] = "kick"
         self.update_buttons()
         await interaction.response.edit_message(
             content=f"تم تغيير عقوبة `{self.action_key}` إلى **Kick**.", view=self
@@ -931,12 +934,12 @@ class PunishmentControlView(discord.ui.View):
         custom_id="toggle_disable_btn",
     )
     async def toggle_disable(self, interaction: discord.Interaction, button: discord.ui.Button):
-        current_status = cfg.get_punishment(self.guild_id, self.action_key)
+        current_status = bot.punishment_config.get(self.action_key)
         if current_status == "disabled":
-            cfg.set_punishment(self.guild_id, self.action_key, "ban")
+            bot.punishment_config[self.action_key] = "ban"
             msg = f"تم تفعيل عقوبة `{self.action_key}` مرة أخرى (أصبحت Ban)."
         else:
-            cfg.set_punishment(self.guild_id, self.action_key, "disabled")
+            bot.punishment_config[self.action_key] = "disabled"
             msg = f"تم تعطيل عقوبة `{self.action_key}`."
 
         self.update_buttons()
@@ -970,8 +973,8 @@ class MainPunishmentsView(discord.ui.Select):
             return
 
         selected_action = self.values[0]
-        view = PunishmentControlView(interaction.guild.id, selected_action)
-        current_setting = cfg.get_punishment(interaction.guild.id, selected_action)
+        view = PunishmentControlView(selected_action)
+        current_setting = bot.punishment_config.get(selected_action, "unknown")
         await interaction.response.send_message(
             f"الحدث المحدد: `{selected_action}` | العقوبة الحالية: **{current_setting}**\nاختر الإجراء الجديد:",
             view=view,
@@ -997,7 +1000,7 @@ async def punishments_command(interaction: discord.Interaction):
         description="اختر من القائمة أدناه الحدث الأمني الذي تريد تعديل عقوبته أو تعطيله.",
         color=discord.Color.blue(),
     )
-    for action, punishment in cfg.get_all_punishments(interaction.guild.id).items():
+    for action, punishment in bot.punishment_config.items():
         embed.add_field(
             name=action.replace("_", " ").title(),
             value=f"العقوبة: `{punishment}`",
@@ -1008,8 +1011,5 @@ async def punishments_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-if __name__ == "__main__":
-    token = os.getenv("BOT_TOKEN")
-    if not token:
-        raise RuntimeError("Set the BOT_TOKEN environment variable before running the bot.")
-    bot.run(token)
+# Replace with your reset bot token
+bot.run("MTUzNDk5MzU1NzA2NzM5OTMyOA.G1C9QC.HUZ7vGMRzZiao_TooJsP5DFe_3a7dwl-MxKrh8")
