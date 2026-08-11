@@ -105,7 +105,7 @@ async def update_guild_dashboard(
     automod_filter: str = Form(""),
     automod_spam: str = Form("disabled")
 ):
-    # 1. Save settings locally to track states
+    # Save the updated security rules/punishments so the bot script can read them live
     config = {
         "bot_add": bot_add,
         "member_kick": member_kick,
@@ -121,18 +121,5 @@ async def update_guild_dashboard(
         "automod_spam": automod_spam
     }
     save_config(config)
-
-    # 2. Communicate changes to Discord API via Bot Token if needed
-    # Example: If you want to update guild settings or trigger server-side changes
-    headers = {
-        "Authorization": f"Bot {BOT_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    async with httpx.AsyncClient() as client:
-        # Example API endpoint call to modify guild features/settings if required:
-        # url = f"https://discord.com/api/v10/guilds/{guild_id}"
-        # await client.patch(url, headers=headers, json={...})
-        pass
 
     return RedirectResponse(url=f"/dashboard/{guild_id}", status_code=303)
