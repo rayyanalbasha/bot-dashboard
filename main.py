@@ -38,6 +38,10 @@ async def login():
 @app.get("/auth/callback")
 async def auth_callback(request: Request, code: str):
     try:
+        print("DEBUG CLIENT_ID:", repr(CLIENT_ID))
+        print("DEBUG SECRET SET:", bool(CLIENT_SECRET), "LEN:", len(CLIENT_SECRET or ""))
+        print("DEBUG REDIRECT_URI:", repr(REDIRECT_URI))
+
         token_url = "https://discord.com/api/oauth2/token"
         payload = {
             "client_id": CLIENT_ID,
