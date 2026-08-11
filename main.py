@@ -1,4 +1,5 @@
 import os
+import sys
 
 from dotenv import load_dotenv
 import httpx
@@ -13,10 +14,21 @@ load_dotenv()  # reads .env locally; no-op on Render (env vars are injected dire
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-CLIENT_ID = os.getenv("1534993557067399328")
+CLIENT_ID = os.getenv("DISCORD_C1534993557067399328LIENT_ID")
 CLIENT_SECRET = os.getenv("QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez")
-REDIRECT_URI = os.getenv("https://bot-dashboard-l46h.onrender.com/auth/callback")
-BOT_TOKEN = os.getenv("MTUzNDk5MzU1NzA2NzM5OTMyOA.G1C9QC.HUZ7vGMRzZiao_TooJsP5DFe_3a7dwl-MxKrh8")
+REDIRECT_URI = os.getenv("DISCORD_REDIREhttps://bot-dashboard-l46h.onrender.com/auth/callbackCT_URI")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# --- TEMP DEBUG: remove once you've confirmed env vars are loading ---
+# Prints True/False only — never the actual secret values — so it's safe
+# to check in logs, but still remove this block once you're done debugging.
+print("ENV CHECK:", {
+    "DISCORD_CLIENT_ID": bool(CLIENT_ID),
+    "DISCORD_CLIENT_SECRET": bool(CLIENT_SECRET),
+    "DISCORD_REDIRECT_URI": bool(REDIRECT_URI),
+    "BOT_TOKEN": bool(BOT_TOKEN),
+}, file=sys.stderr)
+# --- END TEMP DEBUG ---
 
 missing = [name for name, val in [
     ("DISCORD_CLIENT_ID", CLIENT_ID),
@@ -123,7 +135,7 @@ async def update_guild_dashboard(
         "channel_change": channels_edit,
         "emoji_change": emojis_edit,
         "role_change": roles_edit,
-        "unban": roles_remove,  # NOTE: see message below — this mapping is a guess, please check
+        "unban": roles_remove,  # NOTE: unverified mapping, confirm this is what you want
     }
     for action, value in updates.items():
         cfg.set_punishment(guild_id, action, value)
