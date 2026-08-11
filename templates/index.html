@@ -1,37 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Primary Search Engine Tags -->
+    <!-- SEO & Social Media Preview Tags -->
     <title>Discord Bot Dashboard - Manage Your Server</title>
-    <meta name="title" content="Discord Bot Dashboard - Manage Your Server">
-    <meta name="description" content="A powerful, smooth web dashboard to manage automated punishments, moderation, welcome messages, and security settings for your Discord bot.">
-    <meta name="keywords" content="discord bot, discord dashboard, bot management panel, fastapi discord bot">
-    <meta name="author" content="Rayyan">
-
-    <!-- Open Graph / Discord / Social Media Preview Image & Details -->
+    <meta name="description" content="A powerful web dashboard to manage automated punishments, moderation, and settings for your Discord bot.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://bot-dashboard-l46h.onrender.com/">
-    <meta property="og:title" content="Discord Bot Dashboard - Manage Your Server">
-    <meta property="og:description" content="Manage your Discord bot effortlessly with a modern smooth interface. Setup punishments, automod, and server security.">
-    <meta property="og:image" content="https://i.imgur.com/YOUR_IMAGE_LINK.png">
+    <meta property="og:title" content="Discord Bot Dashboard">
+    <meta property="og:description" content="Manage your Discord bot effortlessly from any device.">
+    <meta property="og:image" content="https://kommodo.ai/i/qt9OFdZ6o9M4MmdpexgG">
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Discord Bot Dashboard">
-    <meta name="twitter:description" content="Manage your Discord bot effortlessly with a modern smooth interface.">
-    <meta name="twitter:image" content="https://i.imgur.com/YOUR_IMAGE_LINK.png">
+    <!-- Custom Website Favicon -->
+    <link rel="icon" type="image/png" href="https://kommodo.ai/i/qt9OFdZ6o9M4MmdpexgG">
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #0d1117;
             color: #c9d1d9;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -40,47 +34,78 @@
         }
         .container {
             text-align: center;
-            padding: 40px;
+            padding: 30px 20px;
             background: #161b22;
             border-radius: 12px;
             border: 1px solid #30363d;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
             max-width: 500px;
-            width: 90%;
         }
-        h1 { color: #f0f6fc; margin-bottom: 10px; }
-        p { color: #8b949e; margin-bottom: 30px; }
+        h1 { color: #f0f6fc; font-size: 1.8rem; margin-bottom: 10px; }
+        p { color: #8b949e; font-size: 0.95rem; margin-bottom: 25px; }
+        
         .btn-login {
             background-color: #5865F2;
             color: white;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border-radius: 6px;
             text-decoration: none;
             font-weight: 600;
             display: inline-block;
             transition: background 0.2s;
+            width: 100%;
+            max-width: 250px;
         }
         .btn-login:hover { background-color: #4752c4; }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 15px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        .search-box:focus { border-color: #5865F2; }
+
         .guild-list {
-            margin-top: 20px;
+            margin-top: 15px;
             text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
         }
         .guild-item {
             background: #21262d;
-            padding: 10px 15px;
+            padding: 12px 15px;
             margin-bottom: 10px;
             border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid #30363d;
+            gap: 10px;
+        }
+        .guild-item span {
+            word-break: break-all;
+            font-size: 0.9rem;
         }
         .guild-item a {
             color: #5865F2;
             text-decoration: none;
             font-weight: 600;
+            white-space: nowrap;
         }
         .guild-item a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 20px 15px; }
+            h1 { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -89,26 +114,44 @@
         <h1>Discord Bot Dashboard</h1>
         
         {% if not user %}
-            <p>Manage your bot settings, automod rules, and server configurations easily from the web.</p>
+            <p>Manage your bot settings, automod rules, and server configurations easily from any device.</p>
             <a href="/login" class="btn-login">Login with Discord</a>
         {% else %}
             <p>Welcome back, <strong>{{ user.username }}</strong>!</p>
-            <h3>Select a Server to Manage:</h3>
+            <h3>Select a Server:</h3>
             
-            <div class="guild-list">
+            {% if guilds and guilds|length > 3 %}
+            <input type="text" id="guildSearch" class="search-box" placeholder="Search servers..." onkeyup="filterGuilds()">
+            {% endif %}
+
+            <div class="guild-list" id="guildsContainer">
                 {% if guilds %}
                     {% for guild in guilds %}
-                        <div class="guild-item">
+                        <div class="guild-item" data-name="{{ guild.name | lower }}">
                             <span>{{ guild.name }}</span>
                             <a href="/dashboard/{{ guild.id }}">Configure</a>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p style="text-align: center; color: #8b949e;">No common servers found where you and the bot share management permissions.</p>
+                    <p style="text-align: center; color: #8b949e;">No common servers found.</p>
                 {% endif %}
             </div>
         {% endif %}
     </div>
 
+    <script>
+        function filterGuilds() {
+            let input = document.getElementById('guildSearch').value.toLowerCase();
+            let items = document.getElementsByClassName('guild-item');
+            for (let i = 0; i < items.length; i++) {
+                let name = items[i].getAttribute('data-name');
+                if (name.includes(input)) {
+                    items[i].style.display = "flex";
+                } else {
+                    items[i].style.display = "none";
+                }
+            }
+        }
+    </script>
 </body>
 </html>
