@@ -2,11 +2,14 @@ import os
 from collections import defaultdict
 from datetime import timedelta
 
+from dotenv import load_dotenv
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 import shared_config as cfg
+
+load_dotenv()  # reads .env locally; no-op on Render (env vars are injected directly)
 
 # Initialize intents
 intents = discord.Intents.default()
@@ -1006,7 +1009,7 @@ async def punishments_command(interaction: discord.Interaction):
 
 
 if __name__ == "__main__":
-    token = os.getenv("MTUzNDk5MzU1NzA2NzM5OTMyOA.GjEp_Y.QSBdBAxwq8Acco4JB4_5lyKYtENOpasuHBVrdM")
+    token = os.getenv("BOT_TOKEN")
     if not token:
         raise RuntimeError("Set the BOT_TOKEN environment variable before running the bot.")
     bot.run(token)

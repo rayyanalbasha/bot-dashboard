@@ -1,5 +1,6 @@
 import os
 
+from dotenv import load_dotenv
 import httpx
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
@@ -7,11 +8,13 @@ from fastapi.templating import Jinja2Templates
 
 import shared_config as cfg
 
+load_dotenv()  # reads .env locally; no-op on Render (env vars are injected directly)
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "1534993557067399328")
-CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")  # set this in your environment, do not hardcode
+CLIENT_SECRET = os.getenv("QB8seNuOLAfJH4I9M-mFjlFtSoGmRTez")  # set this in your environment, do not hardcode
 REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "https://bot-dashboard-l46h.onrender.com/auth/callback")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
