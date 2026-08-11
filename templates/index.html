@@ -3,57 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Bot Dashboard</title>
+    
+    <!-- Primary Search Engine Tags -->
+    <title>Discord Bot Dashboard - Manage Your Server</title>
+    <meta name="title" content="Discord Bot Dashboard - Manage Your Server">
+    <meta name="description" content="A powerful, smooth web dashboard to manage automated punishments, moderation, welcome messages, and security settings for your Discord bot.">
+    <meta name="keywords" content="discord bot, discord dashboard, bot management panel, fastapi discord bot">
+    <meta name="author" content="Rayyan">
+
+    <!-- Open Graph / Discord / Social Media Preview Image & Details -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bot-dashboard-l46h.onrender.com/">
+    <meta property="og:title" content="Discord Bot Dashboard - Manage Your Server">
+    <meta property="og:description" content="Manage your Discord bot effortlessly with a modern smooth interface. Setup punishments, automod, and server security.">
+    <meta property="og:image" content="https://i.imgur.com/YOUR_IMAGE_LINK.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Discord Bot Dashboard">
+    <meta name="twitter:description" content="Manage your Discord bot effortlessly with a modern smooth interface.">
+    <meta name="twitter:image" content="https://i.imgur.com/YOUR_IMAGE_LINK.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: #0c0f1d; color: #f3f4f6; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-x: hidden; }
-        .container { width: 100%; max-width: 600px; padding: 40px; background: #161b2e; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); text-align: center; }
-        h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
-        p.welcome { color: #9ca3af; font-size: 15px; margin-bottom: 30px; }
-        .btn-login { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #5865F2, #4752C4); color: white; padding: 14px 28px; border-radius: 12px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(88,101,242,0.3); }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(88,101,242,0.4); }
-        .btn-login svg { width: 22px; height: 22px; fill: white; }
-        .servers-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #e5e7eb; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; }
-        .servers-grid { display: grid; gap: 12px; }
-        .server-card { display: flex; align-items: center; justify-content: space-between; background: #1f2937; padding: 16px 20px; border-radius: 14px; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.04); transition: all 0.25s ease; }
-        .server-card:hover { background: #374151; border-color: #5865F2; transform: translateY(-2px); }
-        .server-info { display: flex; align-items: center; gap: 14px; }
-        .server-icon { width: 45px; height: 45px; border-radius: 50%; background: #4b5563; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; }
-        .server-name { font-weight: 600; font-size: 16px; }
-        .arrow { color: #9ca3af; font-size: 18px; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: #161b22;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 { color: #f0f6fc; margin-bottom: 10px; }
+        p { color: #8b949e; margin-bottom: 30px; }
+        .btn-login {
+            background-color: #5865F2;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+        .btn-login:hover { background-color: #4752c4; }
+        .guild-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .guild-item {
+            background: #21262d;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #30363d;
+        }
+        .guild-item a {
+            color: #5865F2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .guild-item a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>Discord Dashboard</h1>
+        <h1>Discord Bot Dashboard</h1>
+        
         {% if not user %}
-            <p class="welcome">Manage your bot effortlessly with a modern smooth interface.</p>
-            <a href="/login" class="btn-login">
-                <svg viewBox="0 0 127.14 96.36">
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14c2.65-27.28-4.52-51.1-20.45-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5.18-12.72,11.45-12.72S53.9,46,53.88,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5.18-12.72,11.44-12.72S96.16,46,96.13,53,91,65.69,84.69,65.69Z"/>
-                </svg>
-                Login with Discord
-            </a>
+            <p>Manage your bot settings, automod rules, and server configurations easily from the web.</p>
+            <a href="/login" class="btn-login">Login with Discord</a>
         {% else %}
-            <p class="welcome">Welcome back, <span style="color: #5865F2; font-weight: 600;">{{ user.username }}</span>!</p>
-            <div class="servers-title">Select a Server to Manage:</div>
-            <div class="servers-grid">
-                {% for guild in guilds %}
-                    <a href="/dashboard/{{ guild.id }}" class="server-card">
-                        <div class="server-info">
-                            {% if guild.icon %}
-                                <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" class="server-icon" alt="">
-                            {% else %}
-                                <div class="server-icon">{{ guild.name[0] }}</div>
-                            {% endif %}
-                            <span class="server-name">{{ guild.name }}</span>
+            <p>Welcome back, <strong>{{ user.username }}</strong>!</p>
+            <h3>Select a Server to Manage:</h3>
+            
+            <div class="guild-list">
+                {% if guilds %}
+                    {% for guild in guilds %}
+                        <div class="guild-item">
+                            <span>{{ guild.name }}</span>
+                            <a href="/dashboard/{{ guild.id }}">Configure</a>
                         </div>
-                        <span class="arrow">&rarr;</span>
-                    </a>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: #8b949e;">No common servers found where you and the bot share management permissions.</p>
+                {% endif %}
             </div>
         {% endif %}
     </div>
+
 </body>
 </html>
