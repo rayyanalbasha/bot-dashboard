@@ -1,0 +1,50 @@
+<!-- access_denied.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied - DA Security Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            background: radial-gradient(circle at 50% 0%, #1a0d0d 0%, #0a0606 60%, #04060d 100%);
+            color: #f3f4f6; min-height: 100vh; display: flex; align-items: center;
+            justify-content: center; padding: 20px;
+        }
+        .panel {
+            width: 100%; max-width: 480px; text-align: center;
+            background: rgba(30,10,10,0.6); backdrop-filter: blur(12px);
+            padding: 40px 30px; border-radius: 20px;
+            border: 1px solid rgba(248,113,113,0.25);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .icon {
+            width: 56px; height: 56px; margin: 0 auto 18px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 14px; background: linear-gradient(135deg, #dc2626, #991b1b);
+            box-shadow: 0 0 24px rgba(220,38,38,0.5);
+        }
+        h1 { font-size: 20px; color: #fecaca; margin-bottom: 10px; }
+        p { color: #9ca3af; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+        a {
+            display: inline-block; color: #fff; background: #5865F2;
+            padding: 10px 22px; border-radius: 10px; text-decoration: none; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L4 5V11C4 16.5 7.4 21.7 12 23C16.6 21.7 20 16.5 20 11V5L12 2Z" stroke="#fff" stroke-width="1.6"/>
+                <path d="M9 9L15 15M15 9L9 15" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h1>You don't have enough role</h1>
+        <p>You need <strong>Administrator</strong> permission in <strong>{{ guild_name or "this server" }}</strong> to view or change its security settings.</p>
+        <a href="/">&larr; Back to Servers</a>
+    </div>
+</body>
+</html>

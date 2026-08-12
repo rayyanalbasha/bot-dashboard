@@ -18,33 +18,16 @@ import time
 
 from dotenv import load_dotenv
 
-# Load .env (if present) into THIS process's os.environ before anything
-# else runs. Both sec.py and main.py are spawned below with env=child_env,
-# which is a copy of os.environ taken AFTER this call — so this is what
-# makes BOT_TOKEN (and the Discord OAuth vars) actually visible to both
-# children, even though neither of them calls load_dotenv() itself.
 load_dotenv()
 
 
 def ensure_requirements(script_dir: str):
-    """
-    Don't rely on Wispbyte's PY_PACKAGES / REQUIREMENTS_FILE startup
-    variables actually being applied -- install requirements.txt ourselves,
-    every boot, using the same --prefix .local location the platform's own
-    install step uses (so this reuses/extends what's already there instead
-    of creating a second, conflicting install location).
-    """
     req_path = os.path.join(script_dir, "requirements.txt")
     if not os.path.exists(req_path):
         print(f"[launcher] WARNING: no requirements.txt at {req_path}, skipping install.")
         return
 
     print("[launcher] Installing requirements.txt ...")
-    # Use an ABSOLUTE prefix matching the container's actual home directory
-    # (~/.local), not a path relative to script_dir. Wispbyte's own install
-    # step runs `pip install --prefix .local` from /home/container, so that's
-    # where Python's user-site actually looks -- if we install relative to
-    # WebPanel/ instead, packages land somewhere Python never checks.
     local_prefix = os.path.join(os.path.expanduser("~"), ".local")
     result = subprocess.run(
         [sys.executable, "-m", "pip", "install", "--prefix", local_prefix, "-r", req_path],
@@ -54,9 +37,6 @@ def ensure_requirements(script_dir: str):
 
 
 def main():
-    # Always work relative to where launcher.py itself actually lives, so
-    # this doesn't depend on what the current working directory happens to
-    # be when Wispbyte invokes `python /home/container/${PY_FILE}`.
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
@@ -71,13 +51,6 @@ def main():
 
     port = os.getenv("PORT", "8000")
 
-    # Diagnostic: confirm what THIS process (the direct parent of both
-    # sec.py and uvicorn) actually sees, before spawning anything. If this
-    # prints False, the problem is upstream of us (the platform hasn't
-    # injected the variable into this process's environment at all). If it
-    # prints True but sec.py still complains, something inside sec.py's own
-    # process is different -- which is why we also now pass env= explicitly
-    # below instead of relying on implicit inheritance.
     print(f"[launcher] BOT_TOKEN visible to launcher.py: {bool(os.getenv('BOT_TOKEN'))}")
 
     child_env = os.environ.copy()

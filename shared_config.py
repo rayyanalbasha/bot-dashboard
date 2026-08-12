@@ -1,17 +1,16 @@
 """
 shared_config.py
-...
+
+A tiny SQLite-backed config store shared by bot.py and dashboard.py.
 """
 
 import json
-import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "config.db"
-print(f"[shared_config] DB_PATH resolved to: {DB_PATH.resolve()}", flush=True)
-print(f"[shared_config] DB file exists: {DB_PATH.exists()}", flush=True)
+print(f"[shared_config] DB_PATH={DB_PATH.resolve()} exists={DB_PATH.exists()} size={DB_PATH.stat().st_size if DB_PATH.exists() else 0}", flush=True)
 
 PUNISHMENT_ACTIONS = [
     "bot_add",
