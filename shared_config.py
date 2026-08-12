@@ -1,16 +1,24 @@
 """
 shared_config.py
 
-A tiny SQLite-backed config store shared by bot.py and dashboard.py.
+Postgres-backed config store shared by sec.py (running on Wispbyte) and
+main.py (running on Render, or wherever). Both processes talk to the SAME
+hosted database over the network via DATABASE_URL, so a change made
+through either deployment's panel is visible to both immediately -- no
+more "two separate local config.db files" problem.
 """
 
 import json
-import sqlite3
+import os
 from contextlib import contextmanager
-from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "config.db"
-print(f"[shared_config] DB_PATH={DB_PATH.resolve()} exists={DB_PATH.exists()} size={DB_PATH.stat().st_size if DB_PATH.exists() else 0}", flush=True)
+import psycopg
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set.")
+
+print(f"[shared_config] Using Postgres DATABASE_URL (host hidden): {'set' if DATABASE_URL else 'MISSING'}", flush=True)
 
 PUNISHMENT_ACTIONS = [
     "bot_add",
@@ -41,8 +49,7 @@ def _default_row(guild_id: str) -> dict:
 
 @contextmanager
 def _conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn = psycopg.connect(DATABASE_URL)
     try:
         yield conn
         conn.commit()
@@ -56,7 +63,7 @@ def init_db():
             """
             CREATE TABLE IF NOT EXISTS guild_config (
                 guild_id TEXT PRIMARY KEY,
-                data TEXT NOT NULL
+                data JSONB NOT NULL
             )
             """
         )
@@ -66,17 +73,17 @@ def get_guild_config(guild_id: int | str) -> dict:
     guild_id = str(guild_id)
     with _conn() as conn:
         row = conn.execute(
-            "SELECT data FROM guild_config WHERE guild_id = ?", (guild_id,)
+            "SELECT data FROM guild_config WHERE guild_id = %s", (guild_id,)
         ).fetchone()
         if row is None:
             data = _default_row(guild_id)
             conn.execute(
-                "INSERT INTO guild_config (guild_id, data) VALUES (?, ?)",
+                "INSERT INTO guild_config (guild_id, data) VALUES (%s, %s)",
                 (guild_id, json.dumps(data)),
             )
             print(f"[shared_config] get_guild_config: NO ROW for guild_id={guild_id!r} -> created default (all 'ban')", flush=True)
             return data
-        result = json.loads(row[0])
+        result = row[0] if isinstance(row[0], dict) else json.loads(row[0])
         print(f"[shared_config] get_guild_config: guild_id={guild_id!r} punishments={result.get('punishments')}", flush=True)
         return result
 
@@ -85,8 +92,8 @@ def _save_guild_config(guild_id: str, data: dict):
     with _conn() as conn:
         conn.execute(
             """
-            INSERT INTO guild_config (guild_id, data) VALUES (?, ?)
-            ON CONFLICT(guild_id) DO UPDATE SET data = excluded.data
+            INSERT INTO guild_config (guild_id, data) VALUES (%s, %s)
+            ON CONFLICT (guild_id) DO UPDATE SET data = EXCLUDED.data
             """,
             (guild_id, json.dumps(data)),
         )
