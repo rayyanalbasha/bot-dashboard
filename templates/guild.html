@@ -13,11 +13,11 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
         h1 { font-size: 22px; color: #fff; font-weight: 700; }
         .server-id { color: #9ca3af; font-size: 13px; background: #1f2937; padding: 6px 12px; border-radius: 8px; }
-        
+
         .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px; }
         .tab-btn { background: #1f2937; color: #9ca3af; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
         .tab-btn.active { background: #5865F2; color: white; box-shadow: 0 4px 12px rgba(88,101,242,0.3); }
-        
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
@@ -135,14 +135,26 @@
 
             <!-- Moderation Tab -->
             <div id="moderation" class="tab-content">
-                <div class="settings-group">
-                    <label>Welcome Message Setup</label>
-                    <input type="text" name="welcome_msg" value="{{ config.get('welcome_msg', '') }}" placeholder="e.g. Welcome {user} to {server}!">
+                <div class="settings-group" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                        <label>New Account Protection (Age &lt; 48h)</label>
+                        <select name="account_age_protection">
+                            <option value="enabled" {% if config.get("account_age_protection") == "enabled" %}selected{% endif %}>Enabled</option>
+                            <option value="disabled" {% if config.get("account_age_protection") == "disabled" %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+                    <p style="color:#9ca3af; font-size:12px; margin:0;">When enabled, any new member whose Discord account is younger than 48 hours is automatically banned on join — a common defense against raid and alt accounts.</p>
                 </div>
 
-                <div class="settings-group">
-                    <label>Bye Message Setup</label>
-                    <input type="text" name="bye_msg" value="{{ config.get('bye_msg', '') }}" placeholder="e.g. Goodbye {user}!">
+                <div class="settings-group" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                        <label>@everyone Mention Protection</label>
+                        <select name="everyone_mention_protection">
+                            <option value="enabled" {% if config.get("everyone_mention_protection") == "enabled" %}selected{% endif %}>Enabled</option>
+                            <option value="disabled" {% if config.get("everyone_mention_protection") == "disabled" %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+                    <p style="color:#9ca3af; font-size:12px; margin:0;">When enabled: a regular member who mentions @everyone is timed out for 5 minutes immediately. An administrator ranked below the bot is timed out for 5 minutes after mentioning @everyone 3 times within one hour.</p>
                 </div>
 
                 <div class="settings-group">
@@ -170,9 +182,6 @@
     </div>
 
     <script>
-        // Track the form's original values so "Discard Changes" can restore
-        // them, and only show that button once something actually differs
-        // from what was last loaded/saved.
         const form = document.querySelector('form');
         const initialValues = new FormData(form);
         const discardBtn = document.getElementById('discardBtn');

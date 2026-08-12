@@ -77,9 +77,6 @@ async def logout(request: Request):
 
 @app.get("/switch-account")
 async def switch_account(request: Request):
-    # Clears whoever is currently signed in, then sends them straight back
-    # into Discord's OAuth flow so they can sign into a different account
-    # without an extra click on "Login with Discord".
     request.session.clear()
     discord_login_url = (
         f"https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}"
@@ -156,8 +153,8 @@ async def guild_dashboard(request: Request, guild_id: str):
 
     config = cfg.get_guild_config(guild_id)
     return templates.TemplateResponse(request, "guild.html", {"guild_id": guild_id, "config": config["punishments"] | {
-        "welcome_msg": config["welcome_msg"],
-        "bye_msg": config["bye_msg"],
+        "account_age_protection": config.get("account_age_protection", "disabled"),
+        "everyone_mention_protection": config.get("everyone_mention_protection", "disabled"),
     }})
 
 
@@ -184,8 +181,8 @@ async def update_guild_dashboard(
     emojis_edit: str = Form("ban"),
     roles_edit: str = Form("ban"),
     roles_remove: str = Form("ban"),
-    welcome_msg: str = Form(""),
-    bye_msg: str = Form(""),
+    account_age_protection: str = Form("disabled"),
+    everyone_mention_protection: str = Form("disabled"),
     automod_filter: str = Form(""),
     automod_spam: str = Form("disabled"),
 ):
@@ -206,7 +203,8 @@ async def update_guild_dashboard(
     for action, value in updates.items():
         cfg.set_punishment(guild_id, action, value)
 
-    cfg.set_messages(guild_id, welcome_msg=welcome_msg, bye_msg=bye_msg)
+    cfg.set_account_age_protection(guild_id, account_age_protection)
+    cfg.set_everyone_protection(guild_id, everyone_mention_protection)
 
     if automod_filter:
         cfg.add_bad_words(guild_id, automod_filter.split(","))
