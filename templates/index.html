@@ -222,7 +222,13 @@
                 Login with Discord
             </a>
         {% else %}
-            <p>Welcome back, <strong style="color:#eff6ff;">{{ user.username }}</strong>!</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <p style="margin:0;">Welcome back, <strong style="color:#eff6ff;">{{ user.username }}</strong>!</p>
+                <div style="display:flex; gap:8px;">
+                    <a href="/switch-account" style="color:#60a5fa; font-size:0.8rem; text-decoration:none; font-weight:600; border:1px solid rgba(96,165,250,0.3); padding:6px 10px; border-radius:8px;">Switch Account</a>
+                    <a href="/logout" style="color:#f87171; font-size:0.8rem; text-decoration:none; font-weight:600; border:1px solid rgba(248,113,113,0.3); padding:6px 10px; border-radius:8px;">Logout</a>
+                </div>
+            </div>
             <h3 style="color:#dbeafe; font-size:1rem; margin-bottom: 10px;">Select a Server:</h3>
 
             {% if guilds and guilds|length > 3 %}

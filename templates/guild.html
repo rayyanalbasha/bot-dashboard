@@ -45,7 +45,11 @@
     <div class="panel">
         <div class="header">
             <h1>Server Management Panel</h1>
-            <span class="server-id">ID: {{ guild_id }}</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="server-id">ID: {{ guild_id }}</span>
+                <a href="/switch-account" style="color:#9ca3af; font-size:12px; text-decoration:none; border:1px solid rgba(255,255,255,0.1); padding:5px 10px; border-radius:8px;">Switch Account</a>
+                <a href="/logout" style="color:#f87171; font-size:12px; text-decoration:none; border:1px solid rgba(248,113,113,0.2); padding:5px 10px; border-radius:8px;">Logout</a>
+            </div>
         </div>
 
         <form action="/dashboard/{{ guild_id }}/update" method="POST">
@@ -157,9 +161,46 @@
 
             <div class="actions">
                 <a href="/" class="back-btn">&larr; Back to Servers</a>
-                <button type="submit" class="btn-save">Save Changes</button>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" id="discardBtn" class="btn-save" style="display:none; background:#374151; box-shadow:none;" onclick="discardChanges()">Discard Changes</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
+                </div>
             </div>
         </form>
     </div>
+
+    <script>
+        // Track the form's original values so "Discard Changes" can restore
+        // them, and only show that button once something actually differs
+        // from what was last loaded/saved.
+        const form = document.querySelector('form');
+        const initialValues = new FormData(form);
+        const discardBtn = document.getElementById('discardBtn');
+
+        function isDirty() {
+            const current = new FormData(form);
+            for (const [key, value] of current.entries()) {
+                if (initialValues.get(key) !== value) return true;
+            }
+            return false;
+        }
+
+        function checkDirty() {
+            discardBtn.style.display = isDirty() ? 'inline-block' : 'none';
+        }
+
+        function discardChanges() {
+            for (const el of form.elements) {
+                if (!el.name) continue;
+                if (el.tagName === 'SELECT' || el.type === 'text') {
+                    el.value = initialValues.get(el.name);
+                }
+            }
+            discardBtn.style.display = 'none';
+        }
+
+        form.addEventListener('input', checkDirty);
+        form.addEventListener('change', checkDirty);
+    </script>
 </body>
 </html>

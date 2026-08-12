@@ -75,6 +75,19 @@ async def logout(request: Request):
     return RedirectResponse(url="/")
 
 
+@app.get("/switch-account")
+async def switch_account(request: Request):
+    # Clears whoever is currently signed in, then sends them straight back
+    # into Discord's OAuth flow so they can sign into a different account
+    # without an extra click on "Login with Discord".
+    request.session.clear()
+    discord_login_url = (
+        f"https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}"
+        f"&redirect_uri={REDIRECT_URI}&response_type=code&scope=identify%20guilds"
+    )
+    return RedirectResponse(discord_login_url)
+
+
 @app.get("/auth/callback")
 async def auth_callback(request: Request, code: str):
     try:
