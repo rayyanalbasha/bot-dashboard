@@ -91,6 +91,22 @@ async def send_log_channel(guild: discord.Guild, text: str):
     except Exception as e:
         print(f"Failed to send log: {e}")
 
+# Helper function: DM a warned member with an embed explaining who warned
+# them and why. Silently ignored if the member has DMs closed or the bot
+# otherwise can't deliver the message.
+async def send_warn_dm(member: discord.Member, admin: discord.abc.User, reason: str, guild: discord.Guild):
+    try:
+        embed = discord.Embed(
+            title="⚠️ تم تحذيرك",
+            description=f"تم تحذيرك بواسطة {admin.mention} في سيرفر **{guild.name}**.",
+            color=discord.Color.orange(),
+        )
+        embed.add_field(name="السبب", value=reason or "بدون سبب", inline=False)
+        embed.set_footer(text=guild.name, icon_url=guild.icon.url if guild.icon else discord.Embed.Empty)
+        await member.send(embed=embed)
+    except Exception as e:
+        print(f"Failed to DM warned member {member}: {e}")
+
 async def execute_punishment(member: discord.Member, action_type: str, reason: str):
     if is_immune(member):
         return
@@ -584,6 +600,10 @@ async def warn_command(interaction: discord.Interaction, member: discord.Member,
 
     bot.manual_warnings[member.id] += 1
     current_warns = bot.manual_warnings[member.id]
+
+    # Notify the warned member in DMs regardless of whether this is their
+    # first or second warning.
+    await send_warn_dm(member, interaction.user, reason, interaction.guild)
 
     if current_warns == 1:
         await interaction.response.send_message(
